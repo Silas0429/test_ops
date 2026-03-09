@@ -77,6 +77,12 @@ Common environment expectations:
 - Open3D or equivalent environment for point cloud conversion / visualization
 - `plyfile` for reading binary PLY in the run scripts
 
+Import rule for current scripts:
+
+- scripts add the workspace root to `sys.path`
+- then use `import point_ops`
+- scripts do not import bare internal modules such as `config`, `stats`, or `ops.*`
+
 The current workflow often uses separate environments:
 
 - a `pytorch3d`-style environment for operator execution
@@ -190,3 +196,4 @@ Read these files first:
 - the specific `run_*` script relevant to the operator in question
 
 If behavior changes in scripts, CLI flags, or output directories, `command.md` should usually be updated as well.
+If import behavior changes, keep the workspace-root `import point_ops` rule consistent with `point_ops/CODEX.md`.

@@ -10,13 +10,10 @@ from pathlib import Path
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import config
-from stats import report as stats_report
-from ops.svd import SVD
+import point_ops
 
 try:
     import torch
@@ -62,9 +59,9 @@ def _extract_scale(rs: torch.Tensor) -> torch.Tensor:
 
 
 def main() -> None:
-    config.set_mode("reference")
-    config.set_stats_enabled(True)
-    config.set_device("cuda" if DEVICE == "gpu" else "cpu")
+    point_ops.config.set_mode("reference")
+    point_ops.config.set_stats_enabled(True)
+    point_ops.config.set_device("cuda" if DEVICE == "gpu" else "cpu")
 
     use_cuda = DEVICE == "gpu" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -80,7 +77,7 @@ def main() -> None:
     s_gt = torch.ones(B, device=device, dtype=src.dtype)
     tgt_rigid = _transform_points(src, r_gt, t_gt, s_gt)
 
-    rigid_op = SVD(with_scaling=False, name="svd_rigid_demo")
+    rigid_op = point_ops.SVD(with_scaling=False, name="svd_rigid_demo")
     t_rigid = rigid_op(src, tgt_rigid)
     pred_rigid = _apply_t(src, t_rigid)
     err_rigid = torch.linalg.norm(pred_rigid - tgt_rigid, dim=-1)
@@ -102,7 +99,7 @@ def main() -> None:
     s_gt2 = 0.5 + 1.5 * torch.rand(B, device=device, dtype=src.dtype)
     tgt_sim = _transform_points(src, r_gt2, t_gt2, s_gt2)
 
-    sim_op = SVD(with_scaling=True, name="svd_sim_demo")
+    sim_op = point_ops.SVD(with_scaling=True, name="svd_sim_demo")
     t_sim = sim_op(src, tgt_sim)
     pred_sim = _apply_t(src, t_sim)
     err_sim = torch.linalg.norm(pred_sim - tgt_sim, dim=-1)
@@ -143,7 +140,7 @@ def main() -> None:
     print("  reproj mean/max:", float(err_reflect.mean()), float(err_reflect.max()))
 
     print("\n=== stats report ===")
-    print(stats_report())
+    print(point_ops.stats_report())
 
 
 if __name__ == "__main__":

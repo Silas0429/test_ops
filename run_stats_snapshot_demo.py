@@ -20,16 +20,10 @@ from pathlib import Path
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from stats import disabled as stats_disabled
-from stats import log_call as stats_log_call
-from stats import register_instance as stats_register_instance
-from stats import reset as stats_reset
-from stats import set_enabled as stats_set_enabled
-from stats import snapshot as stats_snapshot
+import point_ops.stats as point_stats
 
 
 class DummyOp:
@@ -43,10 +37,10 @@ def _assert_zero_metrics(metrics: dict[str, float]) -> None:
 
 
 def main() -> None:
-    stats_set_enabled(True)
-    stats_reset()
+    point_stats.set_enabled(True)
+    point_stats.reset()
 
-    snap0 = stats_snapshot()
+    snap0 = point_stats.snapshot()
     print("=== initial snapshot ===")
     print(snap0)
 
@@ -60,8 +54,8 @@ def main() -> None:
         raise AssertionError("Expected empty instance_stats after reset.")
 
     op = DummyOp()
-    stats_register_instance(op, "DummyOp", local_name="snapshot_case", meta={"phase": "unit"})
-    stats_log_call(
+    point_stats.register_instance(op, "DummyOp", local_name="snapshot_case", meta={"phase": "unit"})
+    point_stats.log_call(
         op,
         {
             "calls": 2.0,
@@ -72,7 +66,7 @@ def main() -> None:
         },
     )
 
-    snap1 = stats_snapshot()
+    snap1 = point_stats.snapshot()
     print("\n=== populated snapshot ===")
     print(snap1)
 
@@ -97,14 +91,14 @@ def main() -> None:
     # snapshot() must be detached from registry state.
     snap1["class_stats"]["DummyOp"]["calls"] = -999.0
     snap1["instance_stats"][instance_names[0]]["metrics"]["time"] = -999.0
-    snap_copy_check = stats_snapshot()
+    snap_copy_check = point_stats.snapshot()
     if snap_copy_check["class_stats"]["DummyOp"]["calls"] != 2.0:
         raise AssertionError("snapshot() must return detached metric copies.")
     if snap_copy_check["instance_stats"][instance_names[0]]["metrics"]["time"] != 3.5:
         raise AssertionError("snapshot() must return detached instance metric copies.")
 
-    with stats_disabled():
-        snap_disabled = stats_snapshot()
+    with point_stats.disabled():
+        snap_disabled = point_stats.snapshot()
         print("\n=== disabled-scope snapshot ===")
         print(snap_disabled)
         if snap_disabled["enabled"] is not False:
@@ -112,8 +106,8 @@ def main() -> None:
         if snap_disabled["class_stats"]["DummyOp"]["calls"] != 2.0:
             raise AssertionError("disabled() should not erase accumulated counters.")
 
-    stats_reset()
-    snap2 = stats_snapshot()
+    point_stats.reset()
+    snap2 = point_stats.snapshot()
     print("\n=== post-reset snapshot ===")
     print(snap2)
 

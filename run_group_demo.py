@@ -12,12 +12,10 @@ import torch
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import config
-from stats import report as stats_report
+import point_ops
 # Demo config (edit as needed)
 DEVICE = "gpu"  # "gpu" | "cpu"
 B = 2
@@ -25,9 +23,6 @@ N = 8
 C = 4
 M = 3
 K = 5
-
-from ops.group import Group
-
 
 def _build_feat() -> torch.Tensor:
     # Build an easy-to-check feature tensor: value encodes (b, n, c)
@@ -41,9 +36,9 @@ def _build_feat() -> torch.Tensor:
 
 
 def main() -> None:
-    config.set_mode("reference")
-    config.set_stats_enabled(True)
-    config.set_device("cuda" if DEVICE == "gpu" else "cpu")
+    point_ops.config.set_mode("reference")
+    point_ops.config.set_stats_enabled(True)
+    point_ops.config.set_device("cuda" if DEVICE == "gpu" else "cpu")
 
     use_cuda = DEVICE == "gpu" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -60,7 +55,7 @@ def main() -> None:
         device=device,
     )
 
-    op = Group()
+    op = point_ops.Group()
     grouped = op(feat, idx)
 
     # Shape checks
@@ -87,7 +82,7 @@ def main() -> None:
     print("idx shape:", tuple(idx.shape))
     print("grouped shape:", tuple(grouped.shape))
     print("\n=== stats report ===")
-    print(stats_report())
+    print(point_ops.stats_report())
 
 
 if __name__ == "__main__":

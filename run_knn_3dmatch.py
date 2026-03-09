@@ -18,13 +18,10 @@ import numpy as np
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import config
-from stats import report as stats_report
-from ops.knn import KNN
+import point_ops
 
 
 def _find_pointcloud(path: Path) -> Path:
@@ -80,9 +77,9 @@ def main() -> None:
     if xyz.ndim != 2 or xyz.shape[1] != 3:
         raise ValueError("Point cloud must have shape [N, 3].")
 
-    config.set_mode("reference")
-    config.set_device("cuda" if args.device == "gpu" else "cpu")
-    config.set_stats_enabled(True)
+    point_ops.config.set_mode("reference")
+    point_ops.config.set_device("cuda" if args.device == "gpu" else "cpu")
+    point_ops.config.set_stats_enabled(True)
 
     n_pts = xyz.shape[0]
     num_centers = min(args.num_centers, n_pts)
@@ -90,7 +87,7 @@ def main() -> None:
     center_indices = rng.choice(n_pts, size=num_centers, replace=False)
 
     xyz_b = xyz[None, ...]
-    op = KNN(k=args.k, include_self=False)
+    op = point_ops.KNN(k=args.k, include_self=False)
     idx, dist2, mask = op(xyz_b)
     idx = np.asarray(idx)[0]  # [N, K]
 
@@ -126,7 +123,7 @@ def main() -> None:
     print(f"Center indices: {center_indices.tolist()}")
     print(f"Saved KNN intermediates to: {out_dir}")
     print("\n=== stats report ===")
-    print(stats_report())
+    print(point_ops.stats_report())
 
 
 if __name__ == "__main__":

@@ -12,15 +12,10 @@ from pathlib import Path
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import config
-from stats import report as stats_report
-from ops.mlp.linear import Linear
-from ops.mlp.normalization import Normalization
-from ops.mlp.activation import Activation
+import point_ops
 
 # Demo config (edit as needed)
 DEVICE = "gpu"  # "cpu" | "gpu"
@@ -39,9 +34,9 @@ except Exception as exc:  # pragma: no cover
 
 
 def main() -> None:
-    config.set_mode("reference")
-    config.set_stats_enabled(True)
-    config.set_device("cuda" if DEVICE == "gpu" else "cpu")
+    point_ops.config.set_mode("reference")
+    point_ops.config.set_stats_enabled(True)
+    point_ops.config.set_device("cuda" if DEVICE == "gpu" else "cpu")
 
     use_cuda = DEVICE == "gpu" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -50,10 +45,10 @@ def main() -> None:
     x = torch.randn(B, N, C_IN, device=device)
 
     # Simulate a tiny MLP: Linear -> Norm -> Act -> Linear
-    fc1 = Linear(C_IN, HIDDEN)
-    norm1 = Normalization(HIDDEN, norm_type=NORM_TYPE)
-    act1 = Activation(ACT_TYPE)
-    fc2 = Linear(HIDDEN, C_OUT)
+    fc1 = point_ops.Linear(C_IN, HIDDEN)
+    norm1 = point_ops.Normalization(HIDDEN, norm_type=NORM_TYPE)
+    act1 = point_ops.Activation(ACT_TYPE)
+    fc2 = point_ops.Linear(HIDDEN, C_OUT)
 
     y = fc2(act1(norm1(fc1(x))))
 
@@ -61,7 +56,7 @@ def main() -> None:
     print("input shape:", tuple(x.shape))
     print("output shape:", tuple(y.shape))
     print("\n=== stats report ===")
-    print(stats_report())
+    print(point_ops.stats_report())
 
 
 if __name__ == "__main__":

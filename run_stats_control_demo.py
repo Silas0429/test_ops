@@ -21,16 +21,10 @@ import torch
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import config
-from stats import enable as stats_enable
-from stats import report as stats_report
-from stats import reset as stats_reset
-from stats import set_enabled as stats_set_enabled
-from ops.fps import FPS
+import point_ops
 
 
 # Demo config (edit as needed)
@@ -68,9 +62,9 @@ def _print_metrics(title: str, metrics: Dict[str, float]) -> None:
     print(f"  bytes_write : {metrics['bytes_write']:.0f}")
 
 
-def _run_and_collect(op: FPS, xyz: torch.Tensor) -> Dict[str, float]:
+def _run_and_collect(op: point_ops.FPS, xyz: torch.Tensor) -> Dict[str, float]:
     _ = op(xyz)
-    report = stats_report()
+    report = point_ops.stats_report()
     metrics = _parse_class_metrics(report, "FPS")
     if metrics["time"] <= 0:
         raise AssertionError("Expected FPS measured time to be > 0.")
@@ -78,18 +72,18 @@ def _run_and_collect(op: FPS, xyz: torch.Tensor) -> Dict[str, float]:
 
 
 def main() -> None:
-    config.set_mode("reference")
-    config.set_device("cuda" if DEVICE == "gpu" else "cpu")
+    point_ops.config.set_mode("reference")
+    point_ops.config.set_device("cuda" if DEVICE == "gpu" else "cpu")
 
     use_cuda = DEVICE == "gpu" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     xyz = torch.arange(B * N * 3, dtype=torch.float32, device=device).reshape(B, N, 3)
-    op_phase1 = FPS(
+    op_phase1 = point_ops.FPS(
         num_samples=PHASE1_NUM_SAMPLES,
         deterministic=PHASE1_DETERMINISTIC,
         name="stats_control/fps_phase1",
     )
-    op_phase2 = FPS(
+    op_phase2 = point_ops.FPS(
         num_samples=PHASE2_NUM_SAMPLES,
         deterministic=PHASE2_DETERMINISTIC,
         name="stats_control/fps_phase2",
@@ -109,33 +103,33 @@ def main() -> None:
         return
 
     # Phase 0: disabled collection should produce no stats.
-    stats_set_enabled(False)
-    stats_reset()
+    point_ops.stats_set_enabled(False)
+    point_ops.stats_reset()
     _ = op_phase1(xyz)
-    disabled_report = stats_report()
+    disabled_report = point_ops.stats_report()
     print("\n=== disabled stats report ===")
     print(disabled_report)
     if disabled_report.strip() != "No stats collected.":
         raise AssertionError("Expected no stats while collection is disabled.")
 
     # Phase 1: first measured run.
-    stats_enable()
-    stats_reset()
+    point_ops.stats_enable()
+    point_ops.stats_reset()
     first = _run_and_collect(op_phase1, xyz)
     print("\n=== first measured run ===")
     _print_metrics("first run:", first)
 
     # Phase 2: second measured run after reset.
-    stats_reset()
+    point_ops.stats_reset()
     second = _run_and_collect(op_phase2, xyz)
     print("\n=== second measured run ===")
     _print_metrics("second run:", second)
 
     # Phase 3: both runs without reset between them.
-    stats_reset()
+    point_ops.stats_reset()
     _ = op_phase1(xyz)
     _ = op_phase2(xyz)
-    cumulative = _parse_class_metrics(stats_report(), "FPS")
+    cumulative = _parse_class_metrics(point_ops.stats_report(), "FPS")
     print("\n=== cumulative mixed-run window ===")
     _print_metrics("mixed-run cumulative:", cumulative)
 

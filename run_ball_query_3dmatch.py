@@ -20,13 +20,10 @@ import numpy as np
 
 # Ensure point_ops is on sys.path when running directly.
 ROOT = Path(__file__).resolve().parent.parent
-POINT_OPS = ROOT / "point_ops"
-if str(POINT_OPS) not in sys.path:
-    sys.path.insert(0, str(POINT_OPS))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import config
-from stats import report as stats_report
-from ops.ball_query import BallQuery
+import point_ops
 
 
 def _find_pointcloud(path: Path) -> Path:
@@ -103,9 +100,9 @@ def main() -> None:
     if xyz.ndim != 2 or xyz.shape[1] != 3:
         raise ValueError("Point cloud must have shape [N, 3].")
 
-    config.set_mode("reference")
-    config.set_device("cuda" if args.device == "gpu" else "cpu")
-    config.set_stats_enabled(True)
+    point_ops.config.set_mode("reference")
+    point_ops.config.set_device("cuda" if args.device == "gpu" else "cpu")
+    point_ops.config.set_stats_enabled(True)
 
     n_pts = xyz.shape[0]
     num_centers = min(args.num_centers, n_pts)
@@ -115,7 +112,7 @@ def main() -> None:
 
     xyz_b = xyz[None, ...]
     centers_b = centers[None, ...]
-    op = BallQuery(radius=args.radius, max_neighbors=args.max_neighbors)
+    op = point_ops.BallQuery(radius=args.radius, max_neighbors=args.max_neighbors)
     idx, mask, counts = op(xyz_b, centers_b)
     if hasattr(idx, "detach"):
         idx = idx.detach()
@@ -174,7 +171,7 @@ def main() -> None:
     print(f"Neighbor counts per center: {counts[0].tolist() if hasattr(counts, 'shape') else counts}")
     print(f"Saved BallQuery intermediates to: {out_dir}")
     print("\n=== stats report ===")
-    print(stats_report())
+    print(point_ops.stats_report())
 
 
 if __name__ == "__main__":
