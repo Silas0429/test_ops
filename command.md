@@ -184,6 +184,7 @@ configuration constants at the top of each file to change test settings.
 - `test_ops/run_mlp_demo.py`
 - `test_ops/run_ball_query_demo.py`
 - `test_ops/run_stats_control_demo.py`
+- `test_ops/run_stats_snapshot_demo.py`
 
 ---
 
@@ -207,3 +208,27 @@ python -m test_ops.run_stats_control_demo
 - It compares deterministic fields such as `calls`, `flops`, `bytes_read`, and `bytes_write`.
 - It only checks that `time` is positive; it does not require exact equality across windows because runtime measurements naturally fluctuate.
 - The script requires the FPS reference path to be available, so `pytorch3d` must be installed for a full run.
+
+---
+
+## Stats snapshot demo
+
+`run_stats_snapshot_demo.py` validates the structured stats snapshot API added to `point_ops`.
+
+It checks:
+
+- snapshot structure: top-level keys and metric item ordering are as expected
+- accumulation visibility: logged calls appear in both `class_stats` and `instance_stats`
+- copy behavior: mutating a returned snapshot does not corrupt registry state
+- reset behavior: accumulated counters are cleared after `reset()`
+- disabled-scope behavior: `enabled` becomes `False` inside `disabled()` without erasing stored counters
+
+**Usage**
+```bash
+python -m test_ops.run_stats_snapshot_demo
+```
+
+**Notes**
+- This script does not depend on `pytorch3d`.
+- It validates the stats layer directly using a lightweight dummy operator object.
+- It is intended as a quick local check before integrating `StatsScope` inside `registration_pipeline`.

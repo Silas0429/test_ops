@@ -44,6 +44,8 @@ It includes both:
   - `run_group_demo.py`
   - `run_mlp_demo.py`
   - `run_svd_demo.py`
+  - `run_stats_control_demo.py`
+  - `run_stats_snapshot_demo.py`
   - `convert_ply.py`
   - `command.md`
 
@@ -63,6 +65,7 @@ Current state inferred from the repo:
 
 - FPS, KNN, and Ball Query have dedicated 3DMatch runners.
 - Group, MLP, and SVD currently have demo-style runners.
+- Stats lifecycle and snapshot behavior now also have dedicated demo-style runners.
 - `run_3dmatch.sh` is the main batch entry point for FPS / KNN / Ball Query.
 - `command.md` is the current command reference and is the first file to check when script behavior changes.
 
@@ -142,6 +145,15 @@ Current demos:
 - `test_ops/run_group_demo.py`
 - `test_ops/run_mlp_demo.py`
 - `test_ops/run_svd_demo.py`
+- `test_ops/run_stats_control_demo.py`
+- `test_ops/run_stats_snapshot_demo.py`
+
+Example direct runs:
+
+```bash
+python -m test_ops.run_stats_control_demo
+python -m test_ops.run_stats_snapshot_demo
+```
 
 ## 10. Typical Tasks In This Repo
 
