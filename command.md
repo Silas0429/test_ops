@@ -183,3 +183,27 @@ configuration constants at the top of each file to change test settings.
 - `test_ops/run_knn_demo.py`
 - `test_ops/run_mlp_demo.py`
 - `test_ops/run_ball_query_demo.py`
+- `test_ops/run_stats_control_demo.py`
+
+---
+
+## Stats control demo
+
+`run_stats_control_demo.py` validates the manual stats lifecycle controls added to `point_ops`.
+
+It checks:
+
+- stats disabled: no counters are collected
+- stats reset: counters are cleared between measurement windows
+- cumulative behavior: two runs without reset accumulate deterministic cost fields
+
+**Usage**
+```bash
+python -m test_ops.run_stats_control_demo
+```
+
+**Notes**
+- The script currently uses FPS as the measured operator.
+- It compares deterministic fields such as `calls`, `flops`, `bytes_read`, and `bytes_write`.
+- It only checks that `time` is positive; it does not require exact equality across windows because runtime measurements naturally fluctuate.
+- The script requires the FPS reference path to be available, so `pytorch3d` must be installed for a full run.

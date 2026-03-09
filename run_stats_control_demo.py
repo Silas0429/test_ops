@@ -37,8 +37,10 @@ from ops.fps import FPS
 DEVICE = "cpu"  # "cpu" | "gpu"
 B = 2
 N = 256
-NUM_SAMPLES = 32
-DETERMINISTIC = True
+PHASE1_NUM_SAMPLES = 32
+PHASE2_NUM_SAMPLES = 48
+PHASE1_DETERMINISTIC = True
+PHASE2_DETERMINISTIC = False
 
 
 def _parse_class_metrics(report: str, class_name: str) -> Dict[str, float]:
@@ -82,13 +84,25 @@ def main() -> None:
     use_cuda = DEVICE == "gpu" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     xyz = torch.arange(B * N * 3, dtype=torch.float32, device=device).reshape(B, N, 3)
-    op = FPS(num_samples=NUM_SAMPLES, deterministic=DETERMINISTIC, name="stats_control/fps")
+    op_phase1 = FPS(
+        num_samples=PHASE1_NUM_SAMPLES,
+        deterministic=PHASE1_DETERMINISTIC,
+        name="stats_control/fps_phase1",
+    )
+    op_phase2 = FPS(
+        num_samples=PHASE2_NUM_SAMPLES,
+        deterministic=PHASE2_DETERMINISTIC,
+        name="stats_control/fps_phase2",
+    )
 
     print("device:", device)
     print("input shape:", tuple(xyz.shape))
+    print("phase1 config:", {"num_samples": PHASE1_NUM_SAMPLES, "deterministic": PHASE1_DETERMINISTIC})
+    print("phase2 config:", {"num_samples": PHASE2_NUM_SAMPLES, "deterministic": PHASE2_DETERMINISTIC})
 
     try:
-        _ = op(xyz)
+        _ = op_phase1(xyz)
+        _ = op_phase2(xyz)
     except ImportError as exc:
         print(f"Dependency missing: {exc}")
         print("This demo requires the point_ops FPS reference path to be available.")
@@ -97,7 +111,7 @@ def main() -> None:
     # Phase 0: disabled collection should produce no stats.
     stats_set_enabled(False)
     stats_reset()
-    _ = op(xyz)
+    _ = op_phase1(xyz)
     disabled_report = stats_report()
     print("\n=== disabled stats report ===")
     print(disabled_report)
@@ -107,23 +121,23 @@ def main() -> None:
     # Phase 1: first measured run.
     stats_enable()
     stats_reset()
-    first = _run_and_collect(op, xyz)
+    first = _run_and_collect(op_phase1, xyz)
     print("\n=== first measured run ===")
     _print_metrics("first run:", first)
 
     # Phase 2: second measured run after reset.
     stats_reset()
-    second = _run_and_collect(op, xyz)
+    second = _run_and_collect(op_phase2, xyz)
     print("\n=== second measured run ===")
     _print_metrics("second run:", second)
 
-    # Phase 3: two measured runs without reset between them.
+    # Phase 3: both runs without reset between them.
     stats_reset()
-    _ = op(xyz)
-    _ = op(xyz)
+    _ = op_phase1(xyz)
+    _ = op_phase2(xyz)
     cumulative = _parse_class_metrics(stats_report(), "FPS")
-    print("\n=== cumulative two-run window ===")
-    _print_metrics("two-run cumulative:", cumulative)
+    print("\n=== cumulative mixed-run window ===")
+    _print_metrics("mixed-run cumulative:", cumulative)
 
     expected = {
         "calls": first["calls"] + second["calls"],
